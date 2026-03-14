@@ -1,0 +1,28 @@
+import gspread
+import os
+import json
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
+
+def test_sync():
+    print("🛰️ Connecting to Google Cloud...")
+    try:
+        # Load credentials from GitHub Secrets
+        creds_dict = json.loads(os.environ['GCP_SERVICE_ACCOUNT'])
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        gc = gspread.authorize(creds)
+        
+        # Open sheet and write timestamp
+        sh = gc.open(os.environ['GSHEET_NAME'])
+        wks = sh.get_worksheet(0)
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        wks.update('A1', [[f"System Live: {now}"]])
+        print(f"✅ Success! Updated A1 at {now}")
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    test_sync()
