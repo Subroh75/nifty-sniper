@@ -1,4 +1,3 @@
-# Triggering Action
 import pandas as pd
 import yfinance as yf
 import gspread
@@ -6,32 +5,28 @@ from oauth2client.service_account import ServiceAccountCredentials
 import os
 import json
 
-def run_sniper():
-    print("🚀 Initializing Nifty Sniper v1.5...")
+def run_nifty_sniper():
+    print("🎯 Starting Nifty Sniper Analysis...")
     
-    # 1. Authenticate using GitHub Secrets
-    try:
-        creds_json = json.loads(os.environ['GCP_SERVICE_ACCOUNT'])
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
-        gc = gspread.authorize(creds)
-        
-        sheet_name = os.environ['GSHEET_NAME']
-        sh = gc.open(sheet_name)
-        worksheet = sh.get_worksheet(0)
-        print(f"✅ Connected to Sheet: {sheet_name}")
-    except Exception as e:
-        print(f"❌ Auth Error: {e}")
-        return
+    # 1. Connect to Google Sheets
+    creds_json = json.loads(os.environ['GCP_SERVICE_ACCOUNT'])
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
+    gc = gspread.authorize(creds)
+    sh = gc.open(os.environ['GSHEET_NAME'])
+    wks = sh.get_worksheet(0)
 
-    # 2. Define Tickers (Nifty Top 10 for initial test)
-    tickers = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "BHARTIARTL.NS", 
-               "SBIN.NS", "INFY.NS", "LICI.NS", "ITC.NS", "HINDUNILVR.NS"]
-
-    print(f"📈 Downloading data for {len(tickers)} stocks...")
-    data = yf.download(tickers, period="1y", interval="1d", group_by='ticker', threads=True)
+    # 2. Define the Watchlist (Nifty 50 Heavyweights)
+    # You can add up to 50-100 here easily
+    tickers = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", 
+               "BHARTIARTL.NS", "SBIN.NS", "LICI.NS", "ITC.NS", "HINDUNILVR.NS"]
 
     results = []
+    print(f"📊 Scanning {len(tickers)} stocks...")
+
+    # 3. Data Processing
+    data = yf.download(tickers, period="1y", interval="1d", group_by='ticker')
+
     for ticker in tickers:
         try:
             df = data[ticker].dropna()
@@ -43,22 +38,23 @@ def run_sniper():
             std20 = df['Close'].rolling(window=20).std().iloc[-1]
             upper_band = ma20 + (std20 * 2)
 
-            # Sniper Logic
+            # Sniper Logic: Price must be above 200 SMA AND breaking the Upper Bollinger Band
             if cp > sma200 and cp > upper_band:
-                status = "FULL BULL 🚀"
+                status = "🔥 FULL BULL"
             elif cp < sma200:
-                status = "BEARISH 📉"
+                status = "❄️ BEARISH"
             else:
-                status = "WAITING 🕒"
+                status = "⏳ WAITING"
 
             results.append([ticker, round(cp, 2), round(sma200, 2), round(upper_band, 2), status])
         except Exception as e:
-            print(f"⚠️ Error processing {ticker}: {e}")
+            print(f"Skipping {ticker}: {e}")
 
-    # 3. Bulk Update Sheet
-    header = ["Ticker", "Price", "200 SMA", "Upper Band", "Status"]
-    worksheet.clear()
-    worksheet.update('A1', [header] + results)
-    print("🎯 Success! Dashboard updated.")
-if __name__ == "__main__": 
-    run_sniper()
+    # 4. Push to Sheet
+    header = ["Ticker", "Price", "200 SMA", "Upper BB", "Signal"]
+    wks.clear()
+    wks.update('A1', [header] + results)
+    print("✅ Dashboard Updated Successfully!")
+
+if __name__ == "__main__":
+    run_nifty_sniper()
