@@ -1,0 +1,17 @@
+name: Skeleton Sync
+on: workflow_dispatch
+
+jobs:
+  ping-google:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - run: pip install gspread oauth2client
+      - name: Run Test
+        env:
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          GSHEET_NAME: ${{ secrets.GSHEET_NAME }}
+        run: python morning_sync.py
