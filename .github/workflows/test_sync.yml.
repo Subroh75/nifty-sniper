@@ -1,17 +1,19 @@
-name: Nifty Sniper Test
-on: workflow_dispatch
+name: Nifty Sniper Auto-Sync
+on:
+  schedule:
+    - cron: '45 3 * * 1-5'  # 03:45 UTC is 09:15 AM IST, Monday-Friday
+  workflow_dispatch:       # Keep the manual button too!
 
 jobs:
-  run-sync:
+  run-sniper:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - name: Install Dependencies
-        run: pip install gspread oauth2client yfinance pandas
-      - name: Run Sniper
+      - run: pip install gspread oauth2client yfinance pandas
+      - name: Execute
         env:
           GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           GSHEET_NAME: ${{ secrets.GSHEET_NAME }}
