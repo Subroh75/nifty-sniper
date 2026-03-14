@@ -59,6 +59,5 @@ def run_sniper():
     worksheet.clear()
     worksheet.update('A1', [header] + results)
     print("🎯 Success! Dashboard updated.")
-
 if __name__ == "__main__": 
     run_sniper()
