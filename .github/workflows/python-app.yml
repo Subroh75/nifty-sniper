@@ -1,0 +1,15 @@
+name: Sniper-Final-Attempt
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: pip install gspread oauth2client yfinance pandas
+      - name: Run
+        env:
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          GSHEET_NAME: ${{ secrets.GSHEET_NAME }}
+        run: python morning_sync.py
